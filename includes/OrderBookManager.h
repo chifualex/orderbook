@@ -20,13 +20,10 @@ public:
 	void processStreamingTask();
 
 	/* Update orderBook if existing, if not create a new orderBook */
-	void addOrUpdateOrderBook(std::string& result, BookEntry& bookEntry);
+	void addOrUpdateOrderBook(char result, BookEntry& bookEntry);
 
 	/* Handler book operations - add new order : N, cancel orders : C, reset book : F*/
-	void handleOrderBookOperations(std::string& result, BookEntry& bookEntry);
-
-	/* Method used to set thread running status */
-	void setThreadStatus(bool isRunning);
+	void handleOrderBookOperations(char result, BookEntry& bookEntry);
 
 	/* Destructor */
 	~OrderBookManager();
@@ -38,6 +35,5 @@ private:
 	
 	/* Map of <symbol, orderBook> - have a separate OrderBook for every symbol */
 	std::unordered_map<std::string, OrderBook*> m_orderBookMap;
-	bool m_isRunning;
 };
 #endif

@@ -4,7 +4,6 @@
 
 OrderBookManager::OrderBookManager(Queue<std::string>& processingQueue, Queue<std::string>& publishingQueue) : m_processingQueue(processingQueue), m_publishingQueue(publishingQueue)
 {
-	m_isRunning = true;
 }
 
 OrderBookManager::OrderBookManager(const OrderBookManager & other) : m_processingQueue(other.m_processingQueue), m_publishingQueue(other.m_publishingQueue)
@@ -15,37 +14,28 @@ void OrderBookManager::processStreamingTask()
 {
 	BookEntry bookEntry;
 
-	//std::chrono::steady_clock::time_point start, end;
-
 	/* Processing method */
-	while (m_isRunning)
+	while (true)
 	{
 		/* Wait for available stream to process */
 		std::string stream = m_processingQueue.pop();
 
-		//start = std::chrono::steady_clock::now();
-
 		/* Added for testing */
 		if (stream == "Exit")
 		{
-			m_isRunning = false;
+			m_publishingQueue.push("Exit");
+			break;
 		}
 
 		/* Deserialize stream into the bookEntry object*/
-		std::string result = StreamDeserializer::deserializeStream(stream, bookEntry);
+		char result = StreamDeserializer::deserializeStream(stream, bookEntry);
 
 		/* add or update orderBooks*/
 		addOrUpdateOrderBook(result, bookEntry);
-
-		//end = std::chrono::steady_clock::now();
-
-		//std::cout << "Elapsed orderBook update time in microseconds: "
-			//<< std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()
-			//<< " us" << std::endl;
 	}
 }
 
-void OrderBookManager::addOrUpdateOrderBook(std::string& result, BookEntry& bookEntry)
+void OrderBookManager::addOrUpdateOrderBook(char result, BookEntry& bookEntry)
 {
 	/* Check if OrderBook exists already */
 	if (m_orderBookMap.find(bookEntry.getSymbol()) != m_orderBookMap.end()) 
@@ -61,7 +51,7 @@ void OrderBookManager::addOrUpdateOrderBook(std::string& result, BookEntry& book
 	}
 }
 
-void OrderBookManager::handleOrderBookOperations(std::string& result, BookEntry& bookEntry)
+void OrderBookManager::handleOrderBookOperations(char result, BookEntry& bookEntry)
 {
 	/* Get valid orderBook ptr */
 	OrderBook* ptr = m_orderBookMap[bookEntry.getSymbol()];
@@ -69,13 +59,13 @@ void OrderBookManager::handleOrderBookOperations(std::string& result, BookEntry&
 	/* If valid handle the book commands */
 	if (ptr)
 	{
-		if (result == "F")
+		if (result == 'F')
 		{
 			/* Reset book */
 			ptr->resetBook();
 		}
 
-		if (result == "N")
+		if (result == 'N')
 		{
 			/* Update book */
 			ptr->updateBook(bookEntry.getSymbol(),
@@ -86,22 +76,22 @@ void OrderBookManager::handleOrderBookOperations(std::string& result, BookEntry&
 				bookEntry.getSide());
 		}
 
-		if (result == "C")
+		if (result == 'C')
 		{
 			/* Cancel orders */
 			ptr->cancelOrders(bookEntry.getUserOrderId(),
 				bookEntry.getUserId());
+		}
+
+		if (result == 0)
+		{
+			//m_publishingQueue.push("Invalid stream request");
 		}
 	}
 	else
 	{
 		std::cout << "Invalid OrderBook" << std::endl;
 	}
-}
-
-void OrderBookManager::setThreadStatus(bool isRunning)
-{
-	m_isRunning = isRunning;
 }
 
 OrderBookManager::~OrderBookManager()

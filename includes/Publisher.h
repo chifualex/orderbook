@@ -20,13 +20,9 @@ public:
 	/* Method used to publish (log) messages */
 	void processPublishingMessages();
 
-	/* Set task running status */
-	void setThreadStatus(bool isRunning);
-
 private:
 	Queue<std::string>& m_publishingQueue;
 	bool m_logToFile;
 	bool m_logEnabled;
-	bool m_isRunning;
 };
 #endif

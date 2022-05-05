@@ -5,7 +5,6 @@ Publisher::Publisher(bool logToFile, bool logEnabled, Queue<std::string>& publis
 {
 	m_logToFile = logToFile;
 	m_logEnabled = logEnabled;
-	m_isRunning = true;
 }
 
 Publisher::Publisher(const Publisher & other) : m_publishingQueue(other.m_publishingQueue)
@@ -19,7 +18,7 @@ Publisher::~Publisher()
 void Publisher::processPublishingMessages()
 {
 	/* Publishing task method*/
-	while (m_isRunning)
+	while (true)
 	{
 		/* Wait for publishing messages*/
 		std::string stream = m_publishingQueue.pop();
@@ -42,9 +41,4 @@ void Publisher::processPublishingMessages()
 			}
 		}
 	}
-}
-
-void Publisher::setThreadStatus(bool isRunning)
-{
-	m_isRunning = isRunning;
 }

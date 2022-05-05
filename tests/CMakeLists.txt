@@ -11,17 +11,17 @@ target_link_libraries(GTest::GTest INTERFACE gtest_main)
 
 set(TEST_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/../src/*.cpp")
 
-add_executable(OrderBookTests UnitTests.cpp)
+add_executable(OrderBookUnitTests UnitTests.cpp)
 
-target_include_directories(OrderBookTests PUBLIC
+target_include_directories(OrderBookUnitTests PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../includes
 )
 
 set(ENABLE_EXPORTS ON)
 
-target_link_libraries(OrderBookTests
+target_link_libraries(OrderBookUnitTests
  PRIVATE
   GTest::GTest
   OrderBookLib)
 
-add_test(OrderBook_gtests OrderBookTests)
+add_test(OrderBook_gtests OrderBookUnitTests)

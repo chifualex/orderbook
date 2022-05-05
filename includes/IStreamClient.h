@@ -22,9 +22,6 @@ public:
 	
 	/* Method used to close the communication channel */
 	virtual void close() = 0;
-	
-	/* Method used to set thread running status */
-	virtual void setThreadStatus(bool isRunning) = 0;
 
 	/* Method used to get the typeof a communication channel */
 	virtual StreamClientType getCommType() = 0;

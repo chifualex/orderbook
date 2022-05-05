@@ -38,7 +38,7 @@ public:
 	static void setBookEntry(int& index, std::string& param, BookEntry& bookEntry);
 	
 	/* Deserialize Stream method */
-	static std::string deserializeStream(std::string& stream, BookEntry& bookEntry);
+	static char deserializeStream(std::string& stream, BookEntry& bookEntry);
 
 private:
 };

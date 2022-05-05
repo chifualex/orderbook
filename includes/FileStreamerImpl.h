@@ -18,9 +18,6 @@ public:
 	
 	/* Method used to close the communication channel */
 	void close() override;
-
-	/* Method used to set thread running status */
-	void setThreadStatus(bool isRunning) override;
 	
 	/* Method used to get the typeof a communication channel */
 	virtual StreamClientType getCommType() { return FILE; }
@@ -31,7 +28,6 @@ private:
 	Queue<std::string>& m_processingQueue;
 	std::fstream m_file;
 	std::string m_filePath;
-	bool m_isRunning;
 };
 
 #endif

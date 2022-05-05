@@ -3,7 +3,6 @@
 
 FileStreamerImpl::FileStreamerImpl(std::string const& filePath, Queue<std::string>& processingQueue) : m_processingQueue(processingQueue)
 {
-	m_isRunning = true;
 	m_filePath = filePath;
 }
 
@@ -30,11 +29,6 @@ void FileStreamerImpl::open()
 	{
 		std::cout << "File does not exists in the specified path" << std::endl;
 	}
-}
-
-void FileStreamerImpl::setThreadStatus(bool isRunning)
-{
-	m_isRunning = isRunning;
 }
 
 FileStreamerImpl::~FileStreamerImpl()

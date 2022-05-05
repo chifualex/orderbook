@@ -60,28 +60,27 @@ void StreamDeserializer::setBookEntry(int& index, std::string& param, BookEntry&
 	}
 }
 
-std::string StreamDeserializer::deserializeStream(std::string& stream, BookEntry& bookEntry)
+char StreamDeserializer::deserializeStream(std::string& stream, BookEntry& bookEntry)
 {
 	/* Check for flush command */
 	if (stream == "F" || stream == "F\r")
 	{
-		return "F";
+		return 'F';
 	}
 
 	/* Validate new order*/
 	if (validateStreamAndExtractParameters(stream, bookEntry, NEW_ORDER_FORMAT))
 	{
-		return "N";
+		return 'N';
 	}
 	
 	/* Validate cancel orders */
 	if (validateStreamAndExtractParameters(stream, bookEntry, CANCEL_ORDER_FORMAT))
 	{
-		return "C";
+		return 'C';
 	}
 
-	//std::cout << "Invalid stream request" << std::endl;
-	return "";
+	return 0;
 }
 
 bool StreamDeserializer::validateStreamAndExtractParameters(std::string& stream, BookEntry& bookEntry, std::regex validator)

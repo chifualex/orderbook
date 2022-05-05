@@ -1,10 +1,8 @@
 #include "UnitTests.h"
-#include "CommUdpClientImpl.h"
 #include "FileStreamerImpl.h"
 #include "Queue.h"
 #include "ThreadManager.h"
 #include "OrderBookManager.h"
-#include "Factory.h"
 #include "Publisher.h"
 #include <iostream>
 #include <vector>
@@ -14,97 +12,11 @@
 std::string filePath;
 std::stringstream outputBuffer, expectedOutputbuffer;
 
-void run_performance_test(std::string& path)
-{
-	std::string performanceFilePath = path + "\\performanceFile.csv";
-
-	remove(performanceFilePath.c_str());
-
-	std::ofstream performanceFile;
-  	performanceFile.open(performanceFilePath);
-
-	for (int i = 0; i < 10000; i++)
-	{
-		performanceFile << "N, " << i << ", IBM, 10, 100, B, " << i << "\n";
-	}
-
-	for (int i = 10000; i < 20000; i++)
-	{
-		performanceFile << "N, " << i << ", IBM, 11, 100, S, " << i << "\n";
-	}
-
-	for (int i = 20000; i < 30000; i++)
-	{
-		performanceFile << "N, " << i << ", IBM, 11, 100, B, " << i << "\n";
-	}
-
-	for (int i = 30000; i < 40000; i++)
-	{
-		performanceFile << "N, " << i << ", IBM, 10, 100, S, " << i << "\n";
-	}
-
-	performanceFile.close();
-
-	/* Create processing and publishing queues */
-	Queue<std::string> orderBookProcessingQueue;
-	Queue<std::string> publishingQueue;
-
-	/* Create main class objects - OrderBookManager, ThreadManager and Publisher */
-	OrderBookManager* orderBookManager = new OrderBookManager(orderBookProcessingQueue, publishingQueue);
-	ThreadManager* threadManager = new ThreadManager();
-	Publisher* publisher = new Publisher(false, false, publishingQueue);
-	
-	BookEntry bookEntry;
-
-	IStreamClient* client = new FileStreamerImpl(performanceFilePath, orderBookProcessingQueue);
-	threadManager->createThread(publisher, &Publisher::processPublishingMessages);
-
-	client->open();
-	client->read();
-
-	std::string stream;
-
-	std::chrono::steady_clock::time_point start, end;
-	start = std::chrono::steady_clock::now();
-
-	while (true)
-	{
-		std::string stream = orderBookProcessingQueue.pop();
-
-		if (stream == "Exit")
-		{
-			break;
-		}
-
-		std::string result = StreamDeserializer::deserializeStream(stream, bookEntry);
-
-		orderBookManager->addOrUpdateOrderBook(result, bookEntry);
-	}
-
-	end = std::chrono::steady_clock::now();
-
-	std::cout << "Elapsed orderBook update time in seconds: "
-		<< std::chrono::duration_cast<std::chrono::seconds>(end - start).count()
-		<< " s" << std::endl;
-
-	client->close();
-	Logger::getLogger().closeLogFile();
-
-	publishingQueue.push("Exit");
-	publisher->setThreadStatus(false);
-	threadManager->joinAll();
-
-	delete orderBookManager;
-	delete client;
-	delete threadManager;
-	delete publisher;
-}
-
 void RunTest(std::string& path, int indexFile, std::stringstream& outputBuffer, std::stringstream& expectedOutputBuffer)
 {
-	std::string expectedOutputFilePath = path + "\\outputs\\expectedOutput" + std::to_string(indexFile + 1) + ".csv";
-	std::string outputFilePath = path + "\\outputs\\outputFile" + std::to_string(indexFile + 1) + ".csv";
-	std::string inputFilePath = path + "\\inputs\\inputFile" + std::to_string(indexFile + 1) + ".csv";
+	std::string expectedOutputFilePath = path + "\\tests\\outputs\\expectedOutput" + std::to_string(indexFile + 1) + ".csv";
+	std::string outputFilePath = path + "\\tests\\outputs\\outputFile" + std::to_string(indexFile + 1) + ".csv";
+	std::string inputFilePath = path + "\\tests\\inputs\\inputFile" + std::to_string(indexFile + 1) + ".csv";
 
 	remove(outputFilePath.c_str());
 
@@ -137,7 +49,7 @@ void RunTest(std::string& path, int indexFile, std::stringstream& outputBuffer, 
 			break;
 		}
 
-		std::string result = StreamDeserializer::deserializeStream(stream, bookEntry);
+		char result = StreamDeserializer::deserializeStream(stream, bookEntry);
 
 		orderBookManager->addOrUpdateOrderBook(result, bookEntry);
 	}
@@ -156,7 +68,6 @@ void RunTest(std::string& path, int indexFile, std::stringstream& outputBuffer, 
 	expectedOutputbuffer << expectedOutputFile.rdbuf();
 
 	publishingQueue.push("Exit");
-	publisher->setThreadStatus(false);
 	threadManager->joinAll();
 
 	delete orderBookManager;
@@ -265,7 +176,8 @@ int main(int argc, char** argv)
 {
 	if (argc < 2)
 	{
-		std::cout << "Please provide the path for input scenario files" << std::endl;		
+		std::cout << "Please provide the path for input scenario files" << std::endl;
+		return -1;
 	}
 
 	filePath = argv[1];
