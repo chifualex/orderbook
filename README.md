@@ -1,6 +1,8 @@
 # orderbook
 Build and run the project : 
 
+Build
+
 mkdir build && cd build
 cmake ..
 cmake --build .
