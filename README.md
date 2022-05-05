@@ -14,11 +14,11 @@ Dependencies : g++ (Rev10, Built by MSYS2 project) 11.2.0 or higher on Windows
 
 Run the exe :
 
-./OrderBookApp.exe <inputFilePath>
+./OrderBookApp.exe inputFilePath
 
 Run the UnitTests :
 
-./OrderBookUnitTests.exe <projectPath>
+./OrderBookUnitTests.exe projectPath
 
 Future Improvements :
 
