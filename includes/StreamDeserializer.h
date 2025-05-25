@@ -11,6 +11,7 @@
 
 /* ACK, Trade, Top of book string format defines */
 #define ACKNOWLEDGEMENT_FORMAT(userId, userOrderId) std::string("A, " + std::to_string(userId) + ", " + std::to_string(userOrderId))
+#define CANCEL_FORMAT(userId, userOrderId) std::string("C, " + std::to_string(userId) + ", " + std::to_string(userOrderId))
 #define ASK_TRADE_FORMAT(userId, userOrderId, askUserId, askUserOrderId, price, quantity) std::string("T, " + std::to_string(userId) + ", " + std::to_string(userOrderId) \
 														+ ", " + std::to_string(askUserId) + ", " + std::to_string(askUserOrderId) \
 														+ ", " + std::to_string(price) + ", " + std::to_string(quantity))
@@ -39,8 +40,9 @@ public:
 	
 	/* Deserialize Stream method */
 	static char deserializeStream(std::string& stream, BookEntry& bookEntry);
-
 private:
+	static std::regex m_newOrderFormat;
+	static std::regex m_cancelOrderFormat;
 };
 
 #endif

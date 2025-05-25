@@ -5,5 +5,6 @@
 #include <sstream>
 
 void RunTest(std::string& path, int indexFile, std::stringstream& outputBuffer, std::stringstream& expectedOutputBuffer);
+void RunPerformanceTest(std::string& path);
 
 #endif

@@ -1,20 +1,47 @@
-#include "FileStreamerImpl.h"
 #include "Queue.h"
+#include "Factory.h"
+#include "FileStreamerImpl.h"
+#include "CommUdpImpl.h"
+#include "CommTcpImpl.h"
 #include "ThreadManager.h"
 #include "OrderBookManager.h"
 #include "Publisher.h"
 #include "UnitTests.h"
 #include <atomic>
 
-bool validateInputParameters(int argc, char *argv[], std::string& filePath)
+IStreamClient::StreamClientType m_type = IStreamClient::StreamClientType::TCP;
+std::string m_filePath = "";
+
+bool validateInputParameters(int argc, char *argv[])
 {
 	if (argc == 2)
 	{
-		filePath = argv[1];
+		if (argv[1] == "UDP")
+		{
+			std::cout << "UDP mode" << "\n";
+			m_type = IStreamClient::StreamClientType::UDP;
+		}
+		else if (argv[1] == "TCP")
+		{
+			std::cout << "TCP mode" << "\n";
+			m_type = IStreamClient::StreamClientType::TCP;
+		}
+	}
+	else if (argc == 3)
+	{
+		if (argv[1] == "FILE")
+		{
+			m_type = IStreamClient::StreamClientType::FILE;
+			m_filePath = argv[2];
+		}
+		else
+		{
+			std::cout << "Invalid parameters, please provide the stream type !" << "\n";
+		}
 	}
 	else
 	{
-		std::cout << "Invalid parameters, please provide the input file path !" << std::endl;
+		std::cout << "Invalid parameters, please provide the input file path !" << "\n";
 		return false;
 	}
 
@@ -23,9 +50,7 @@ bool validateInputParameters(int argc, char *argv[], std::string& filePath)
 
 int main(int argc, char *argv[])
 {	
-	std::string filePath = "";
-
-	if (!validateInputParameters(argc, argv, filePath))
+	if (!validateInputParameters(argc, argv))
 	{
 		return 1;
 	}
@@ -33,44 +58,32 @@ int main(int argc, char *argv[])
 	/* Create processing and publishing queues */
 	Queue<std::string> orderBookProcessingQueue;
 	Queue<std::string> publishingQueue;
-
-	/* Create main class objects - OrderBookManager, ThreadManager and Publisher */
-	OrderBookManager* orderBookManager = new OrderBookManager(orderBookProcessingQueue, publishingQueue);
-	ThreadManager* threadManager = new ThreadManager();
-	Publisher* publisher = new Publisher(false, true, publishingQueue);
-	//Logger::getLogger().setFilePath();
-
-	IStreamClient* client;
 	
-	std::cout << filePath << std::endl;
-
-	/* Create File reader */
-	client = new FileStreamerImpl(filePath, orderBookProcessingQueue);
+	/* Create main class objects - OrderBookManager, ThreadManager, Publisher and IStreamClient */
+	std::shared_ptr<OrderBookManager> p_orderBookManager(new OrderBookManager(orderBookProcessingQueue, publishingQueue));
+	std::shared_ptr<Publisher> p_publisher(new Publisher(false, true, publishingQueue));
+	std::shared_ptr<ThreadManager> p_threadManager(new ThreadManager());
+	std::shared_ptr<IStreamClient> p_streamer(Factory::createStreamObject(m_type, orderBookProcessingQueue, m_filePath));
 
 	/* Open client connection or File reader */
-	client->open();
+	p_streamer->Open();
 
 	try
 	{
 		/* Create Input streamer and publisher threads */
-		threadManager->createThread(client, &IStreamClient::read);
-		threadManager->createThread(publisher, &Publisher::processPublishingMessages);
+		p_threadManager->createThread(p_streamer, &IStreamClient::Read);
+		p_threadManager->createThread(p_publisher, &Publisher::processPublishingMessages);
 		
 		/* Process streams from client reader */
-		orderBookManager->processStreamingTask();
+		p_orderBookManager->processStreamingTask();
 	}
 	catch (std::exception& e)
 	{
 		std::cout << e.what();
 	}
 
-	client->close();
-	threadManager->joinAll();
+	p_streamer->Close();
+	p_threadManager->joinAll();
 
-	delete orderBookManager;
-	delete client;
-	delete threadManager;
-	delete publisher;
-
-	std::cout << "Exiting .." << std::endl;
+	std::cout << "Exiting .." << "\n";
 }

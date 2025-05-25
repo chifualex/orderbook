@@ -7,6 +7,8 @@
 #include <iostream>
 #include <vector>
 #include <stdio.h>
+#include <chrono>
+#include <memory> 
 #include <gtest/gtest.h>
 
 std::string filePath;
@@ -14,9 +16,9 @@ std::stringstream outputBuffer, expectedOutputbuffer;
 
 void RunTest(std::string& path, int indexFile, std::stringstream& outputBuffer, std::stringstream& expectedOutputBuffer)
 {
-	std::string expectedOutputFilePath = path + "\\tests\\outputs\\expectedOutput" + std::to_string(indexFile + 1) + ".csv";
-	std::string outputFilePath = path + "\\tests\\outputs\\outputFile" + std::to_string(indexFile + 1) + ".csv";
-	std::string inputFilePath = path + "\\tests\\inputs\\inputFile" + std::to_string(indexFile + 1) + ".csv";
+	std::string expectedOutputFilePath = path + "/tests//outputs//expectedOutput" + std::to_string(indexFile + 1) + ".csv";
+	std::string outputFilePath = path + "/tests/outputs/outputFile" + std::to_string(indexFile + 1) + ".csv";
+	std::string inputFilePath = path + "/tests/inputs/inputFile" + std::to_string(indexFile + 1) + ".csv";
 
 	remove(outputFilePath.c_str());
 
@@ -24,56 +26,93 @@ void RunTest(std::string& path, int indexFile, std::stringstream& outputBuffer, 
 	Queue<std::string> orderBookProcessingQueue;
 	Queue<std::string> publishingQueue;
 
-	/* Create main class objects - OrderBookManager, ThreadManager and Publisher */
-	OrderBookManager* orderBookManager = new OrderBookManager(orderBookProcessingQueue, publishingQueue);
-	ThreadManager* threadManager = new ThreadManager();
-	Publisher* publisher = new Publisher(true, true, publishingQueue);
+	/* Create main class objects - OrderBookManager, ThreadManager, Publisher and IStreamClient */
+	std::shared_ptr<OrderBookManager> p_orderBookManager(new OrderBookManager(orderBookProcessingQueue, publishingQueue));
+	std::shared_ptr<Publisher> p_publisher(new Publisher(true, true, publishingQueue));
+	std::shared_ptr<ThreadManager> p_threadManager(new ThreadManager());
+	std::shared_ptr<IStreamClient> p_streamer(new FileStreamerImpl(inputFilePath, orderBookProcessingQueue));
 	
 	Logger::getLogger().setFilePath(outputFilePath);
 
-	IStreamClient* client = new FileStreamerImpl(inputFilePath, orderBookProcessingQueue);
-	threadManager->createThread(publisher, &Publisher::processPublishingMessages);
+	p_streamer->Open();
 
-	client->open();
-	client->read();
-
-	BookEntry bookEntry;
-	std::string stream;
-
-	while (true)
+	try
 	{
-		stream = orderBookProcessingQueue.pop();
-
-		if (stream == "Exit")
-		{
-			break;
-		}
-
-		char result = StreamDeserializer::deserializeStream(stream, bookEntry);
-
-		orderBookManager->addOrUpdateOrderBook(result, bookEntry);
+		/* Create Input streamer and publisher threads */
+		p_threadManager->createThread(p_streamer, &IStreamClient::Read);
+		p_threadManager->createThread(p_publisher, &Publisher::processPublishingMessages);
+		
+		/* Process streams from client reader */
+		p_orderBookManager->processStreamingTask();
+	}
+	catch (std::exception& e)
+	{
+		std::cout << e.what();
 	}
 
-	client->close();
+	p_streamer->Close();
 	Logger::getLogger().closeLogFile();
 
-	std::ifstream outputFile, expectedOutputFile;
+	std::ifstream outputFile(outputFilePath.c_str());
+	std::ifstream expectedOutputFile;
 
 	expectedOutputFile.open(expectedOutputFilePath.c_str(), std::ios::in);
-	outputFile.open(outputFilePath.c_str(), std::ios::in);
 
 	outputBuffer.str("");
+
+	if (outputFile.is_open())
+	{
+		outputBuffer << outputFile.rdbuf();
+		outputFile.close();
+	}
+    else
+	{
+		std::cout << "Unable to open file" << "\n";
+	} 
+
 	expectedOutputBuffer.str("");
-	outputBuffer << outputFile.rdbuf();
+
 	expectedOutputbuffer << expectedOutputFile.rdbuf();
+	expectedOutputFile.close();
 
-	publishingQueue.push("Exit");
-	threadManager->joinAll();
+	p_threadManager->joinAll();
+}
 
-	delete orderBookManager;
-	delete client;
-	delete threadManager;
-	delete publisher;
+void RunPerformanceTest(std::string& path)
+{
+	std::string inputFilePath = path + "/tests/inputs/inputFile1.csv";
+	std::string outputFilePath = path + "/tests/outputs/outputFilePerformance.csv";
+
+	/* Create processing and publishing queues */
+	Queue<std::string> orderBookProcessingQueue;
+	Queue<std::string> publishingQueue;
+
+	/* Create main class objects - OrderBookManager, ThreadManager, Publisher and IStreamClient */
+	std::shared_ptr<OrderBookManager> p_orderBookManager(new OrderBookManager(orderBookProcessingQueue, publishingQueue));
+	std::shared_ptr<Publisher> p_publisher(new Publisher(true, true, publishingQueue));
+	std::shared_ptr<ThreadManager> p_threadManager(new ThreadManager());
+	std::shared_ptr<IStreamClient> p_streamer(new FileStreamerImpl(inputFilePath, orderBookProcessingQueue));
+
+	Logger::getLogger().setFilePath(outputFilePath);
+
+	try
+	{
+		/* Create Input streamer and publisher threads */
+		p_threadManager->createThread(p_streamer, &IStreamClient::TestPerformance);
+		p_threadManager->createThread(p_publisher, &Publisher::processPublishingMessages);
+		
+		/* Process streams from client reader */
+		p_orderBookManager->processStreamingTask();
+	}
+	catch (std::exception& e)
+	{
+		std::cout << e.what();
+	}
+
+	p_streamer->Close();
+	Logger::getLogger().closeLogFile();
+
+	p_threadManager->joinAll();
 }
 
 TEST(FileTests, TestScenario1)
@@ -172,11 +211,16 @@ TEST(FileTests, TestScenario16)
 	ASSERT_EQ(outputBuffer.str(), expectedOutputbuffer.str());
 }
 
+TEST(PerformanceTests, PerformanceTestScenario1)
+{
+    RunPerformanceTest(filePath);
+}
+
 int main(int argc, char** argv)
 {
 	if (argc < 2)
 	{
-		std::cout << "Please provide the path for input scenario files" << std::endl;
+		std::cout << "Please provide the path for input scenario files" << "\n";
 		return -1;
 	}
 

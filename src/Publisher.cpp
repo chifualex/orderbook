@@ -4,7 +4,7 @@
 Publisher::Publisher(bool logToFile, bool logEnabled, Queue<std::string>& publishingQueue) : m_publishingQueue(publishingQueue)
 {
 	m_logToFile = logToFile;
-	m_logEnabled = logEnabled;
+	m_logEnabled = logEnabled;	
 }
 
 Publisher::Publisher(const Publisher & other) : m_publishingQueue(other.m_publishingQueue)

@@ -15,13 +15,16 @@ public:
 	}StreamClientType;
 
 	/* Method used to read data from a communication channel */
-	virtual void read() = 0;
+	virtual void Read() = 0;
+
+	/* Method used to test performance data from a communication channel */
+	virtual void TestPerformance() = 0;
 	
 	/* Method used to open a communication channel */
-	virtual void open() = 0;
+	virtual void Open() = 0;
 	
 	/* Method used to close the communication channel */
-	virtual void close() = 0;
+	virtual void Close() = 0;
 
 	/* Method used to get the typeof a communication channel */
 	virtual StreamClientType getCommType() = 0;

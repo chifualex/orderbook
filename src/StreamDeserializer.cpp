@@ -80,7 +80,8 @@ char StreamDeserializer::deserializeStream(std::string& stream, BookEntry& bookE
 		return 'C';
 	}
 
-	return 0;
+	//std::cout << "Invalid stream request" << std::endl;
+	return 'F';
 }
 
 bool StreamDeserializer::validateStreamAndExtractParameters(std::string& stream, BookEntry& bookEntry, std::regex validator)

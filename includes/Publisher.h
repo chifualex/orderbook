@@ -22,7 +22,7 @@ public:
 
 private:
 	Queue<std::string>& m_publishingQueue;
-	bool m_logToFile;
 	bool m_logEnabled;
+	bool m_logToFile;
 };
 #endif

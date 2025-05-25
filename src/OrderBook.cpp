@@ -54,7 +54,7 @@ void OrderBook::cancelOrders(int userOrderId, int userId)
 		{
 			/* Erase from map and publish ACK*/
 			it = m_bids.erase(it);
-			m_publishingQueue.push(ACKNOWLEDGEMENT_FORMAT(userId, userOrderId));
+			m_publishingQueue.push(CANCEL_FORMAT(userId, userOrderId));
 		}
 		else
 		{
@@ -70,7 +70,7 @@ void OrderBook::cancelOrders(int userOrderId, int userId)
 		{
 			/* Erase from map and publish ACK*/
 			it = m_asks.erase(it);
-			m_publishingQueue.push(ACKNOWLEDGEMENT_FORMAT(userId, userOrderId));
+			m_publishingQueue.push(CANCEL_FORMAT(userId, userOrderId));
 		}
 		else
 		{
